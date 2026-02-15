@@ -2,4 +2,4 @@ pygame
 openai
 python-dotenv
 streamlit
- pillow
+pillow
