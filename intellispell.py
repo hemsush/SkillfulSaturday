@@ -34,34 +34,37 @@ GENERATED_WORDS_COUNT = 60  # how many new words to add when empty
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def ai_hint(word):
+def ai_clues(word):
     try:
         r = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{
                 "role": "user",
                 "content": (
-                    "Give ONE simple hint for kids to guess this word. "
-                    "Do NOT reveal the word. Keep it short.\n"
-                    f"Word: {word}"
+                    f"Give THREE progressive hints for kids to guess the word '{word}'. "
+                    "Each hint should be more helpful than the previous one. "
+                    "Do NOT reveal the word in any hint. Keep each hint short.\n"
+                    "Format: Hint 1: [first hint]\nHint 2: [second hint]\nHint 3: [third hint]"
                 )
             }],
             temperature=0.7
         )
-        return r.choices[0].message.content.strip()
+        response = r.choices[0].message.content.strip()
+        # Parse the response into a list
+        lines = response.split('\n')
+        clues = []
+        for line in lines:
+            if line.startswith('Hint'):
+                clue = line.split(': ', 1)[1] if ': ' in line else line
+                clues.append(clue.strip())
+        return clues if len(clues) == 3 else [f"The word has {len(word)} letters."] * 3
     except Exception:
-        return f"Hint: The word has {len(word)} letters."
+        return [f"The word has {len(word)} letters."] * 3
 
-def mask_word(word, revealed):
-    return " ".join(
-        word[i].upper() if i in revealed else "_"
-        for i in range(len(word))
-    )
+def mask_word(word):
+    return " ".join("_" for _ in word)
 
-def reveal_letter(word, revealed):
-    hidden = [i for i in range(len(word)) if i not in revealed]
-    if hidden:
-        revealed.add(random.choice(hidden))
+
 
 def generate_word():
     """Make a pronounceable-ish random word so the game stays unique."""
@@ -110,11 +113,12 @@ typed = ""
 
 deck = build_deck()     # unique words per run
 current_word = ""
-revealed = set()
+clues = []
+current_clue_index = 0
 lives = LIVES_PER_WORD
 failed_words = 0
 score = 0
-hint_text = ""
+clue_text = ""
 show_answer_timer = 0
 # -------------------------------------------
 
@@ -126,12 +130,13 @@ def next_unique_word():
     return deck.pop()
 
 def new_word():
-    global current_word, revealed, lives, hint_text, typed
+    global current_word, lives, clue_text, typed, clues, current_clue_index
     current_word = next_unique_word()
-    revealed = set()
     lives = LIVES_PER_WORD
     typed = ""
-    hint_text = ai_hint(current_word)
+    clues = ai_clues(current_word)
+    current_clue_index = 0
+    clue_text = clues[0] if clues else "No clue available"
 
 running = True
 while running:
@@ -163,7 +168,9 @@ while running:
                         new_word()
                     else:
                         lives -= 1
-                        reveal_letter(current_word, revealed)
+                        current_clue_index += 1
+                        if current_clue_index < len(clues):
+                            clue_text = clues[current_clue_index]
                         typed = ""
 
                         if lives == 0:
@@ -181,11 +188,12 @@ while running:
                     typed = ""
                     deck = build_deck()
                     current_word = ""
-                    revealed = set()
+                    clues = []
+                    current_clue_index = 0
                     lives = LIVES_PER_WORD
                     failed_words = 0
                     score = 0
-                    hint_text = ""
+                    clue_text = ""
 
     if phase == "SHOW_ANSWER" and now > show_answer_timer:
         if failed_words >= MAX_FAILED_WORDS:
@@ -213,14 +221,14 @@ while running:
 
     elif phase == "PLAY":
         screen.blit(font_mid.render("Guess the word:", True, (255, 255, 180)), (20, 190))
-        screen.blit(font_big.render(mask_word(current_word, revealed), True, (255, 255, 255)), (20, 230))
+        screen.blit(font_big.render(mask_word(current_word), True, (255, 255, 255)), (20, 230))
 
-        screen.blit(font_mid.render("AI Hint:", True, (200, 200, 255)), (20, 290))
-        # keep hint in one/two lines if long
-        hint = hint_text
-        if len(hint) > 55:
-            hint = hint[:55] + "..."
-        screen.blit(font_mid.render(hint, True, (255, 255, 255)), (20, 320))
+        screen.blit(font_mid.render("AI Clue:", True, (200, 200, 255)), (20, 290))
+        # keep clue in one/two lines if long
+        clue = clue_text
+        if len(clue) > 55:
+            clue = clue[:55] + "..."
+        screen.blit(font_mid.render(clue, True, (255, 255, 255)), (20, 320))
 
         screen.blit(font_mid.render(f"Lives left: {lives}", True, (255, 200, 200)), (20, 360))
         screen.blit(font_mid.render("Your answer:", True, (200, 255, 200)), (20, 400))
