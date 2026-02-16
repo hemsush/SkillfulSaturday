@@ -1,0 +1,4 @@
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+pip install pygame openai python-dotenv pyinstaller
+pyinstaller --onefile --windowed --icon=icon.ico --name IntelliSpell intellispell.py
