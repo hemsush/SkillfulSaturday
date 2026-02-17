@@ -1,0 +1,170 @@
+{
+  "name": "Instagram Posting Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "imageUrl",
+              "value": "https://raw.githubusercontent.com/hemsush/ImageGallery/main/finale_prep.jpg"
+            },
+            {
+              "name": "captionText",
+              "value": "Computer club students preparing for the demo . Guess who posted it"
+            },
+            {
+              "name": "Node",
+              "value": "<nodeid>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Image & Caption",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        192
+      ],
+      "id": "5b3e979a-d127-4000-8625-57e826fd0c4d"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        192
+      ],
+      "id": "2c54e387-d0af-47f9-9ceb-74a82b2c5dd7",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "={{ $json.Node }}",
+        "edge": "media",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "image_url",
+                "value": "={{ $json.imageUrl }}"
+              },
+              {
+                "name": "caption",
+                "value": "={{ $json.captionText }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        176,
+        192
+      ],
+      "id": "6e6a9fc1-df76-4b86-b1bf-c5c5ee838a43",
+      "name": "Creating Container ID",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "L7FRd4UIYfIqLFfc",
+          "name": "SkillfulSatDemo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "={{ $('Set Image & Caption').item.json.Node }}",
+        "edge": "media_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              },
+              {
+                "name": "image_url",
+                "value": "={{ $('Set Image & Caption').item.json.imageUrl }}"
+              },
+              {
+                "name": "caption",
+                "value": "={{ $('Set Image & Caption').item.json.captionText }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        400,
+        192
+      ],
+      "id": "486cefd5-3184-4e4e-987c-6609959cd888",
+      "name": "Facebook Graph API",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "L7FRd4UIYfIqLFfc",
+          "name": "SkillfulSatDemo"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set Image & Caption": {
+      "main": [
+        [
+          {
+            "node": "Creating Container ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Image & Caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creating Container ID": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c80c8678-faf5-41af-a1c5-2163aeb819a2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c590a2966891ac2b90aeb42ae90a504020bd1ed5eb24a48e602c54747a103aac"
+  },
+  "id": "e5dqt9AFsQSyEkv6",
+  "tags": []
+}
