@@ -61,8 +61,14 @@ def ai_clues(word):
     except Exception:
         return [f"The word has {len(word)} letters."] * 3
 
-def mask_word(word):
-    return " ".join("_" for _ in word)
+def mask_word(word, revealed_count=0):
+    result = []
+    for i, char in enumerate(word):
+        if i < revealed_count:
+            result.append(char)
+        else:
+            result.append("_")
+    return " ".join(result)
 
 
 
@@ -120,6 +126,7 @@ failed_words = 0
 score = 0
 clue_text = ""
 show_answer_timer = 0
+revealed_count = 0
 # -------------------------------------------
 
 def next_unique_word():
@@ -130,12 +137,13 @@ def next_unique_word():
     return deck.pop()
 
 def new_word():
-    global current_word, lives, clue_text, typed, clues, current_clue_index
+    global current_word, lives, clue_text, typed, clues, current_clue_index, revealed_count
     current_word = next_unique_word()
     lives = LIVES_PER_WORD
     typed = ""
     clues = ai_clues(current_word)
     current_clue_index = 0
+    revealed_count = 0
     clue_text = clues[0] if clues else "No clue available"
 
 running = True
@@ -168,6 +176,7 @@ while running:
                         new_word()
                     else:
                         lives -= 1
+                        revealed_count += 1
                         current_clue_index += 1
                         if current_clue_index < len(clues):
                             clue_text = clues[current_clue_index]
@@ -194,6 +203,7 @@ while running:
                     failed_words = 0
                     score = 0
                     clue_text = ""
+                    revealed_count = 0
 
     if phase == "SHOW_ANSWER" and now > show_answer_timer:
         if failed_words >= MAX_FAILED_WORDS:
@@ -221,7 +231,7 @@ while running:
 
     elif phase == "PLAY":
         screen.blit(font_mid.render("Guess the word:", True, (255, 255, 180)), (20, 190))
-        screen.blit(font_big.render(mask_word(current_word), True, (255, 255, 255)), (20, 230))
+        screen.blit(font_big.render(mask_word(current_word, revealed_count), True, (255, 255, 255)), (20, 230))
 
         screen.blit(font_mid.render("AI Clue:", True, (200, 200, 255)), (20, 290))
         # keep clue in one/two lines if long
